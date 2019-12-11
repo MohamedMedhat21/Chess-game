@@ -1,0 +1,38 @@
+﻿  Source.cpp
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(308): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(310): warning C4244: '=': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(311): warning C4244: '=': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(324): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(408): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(422): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(423): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(284): warning C4715: 'checkForMoves': not all control paths return a value
+  Project11.vcxproj -> C:\Users\EGYPT_LAPTOP\source\repos\Project11\x64\Debug\Project11.exe
