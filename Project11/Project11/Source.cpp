@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <time.h>
 #include<iostream>
 #include <vector>
@@ -6,12 +7,19 @@
 
 using namespace sf;
 
-Vector2f offset(28, 28);
+Vector2f offset(78, 28);
 Piece p[32];
 int size = 56;
+bool undo = 0;
 int n = 0;
+char turn = 'W';
 Sprite f[32];
 std::vector<std::string>moves;
+std::vector<std::string>movesFull;
+sf::RectangleShape rectangle(sf::Vector2f(56, 56)), rectangle2(sf::Vector2f(56, 56));
+sf::SoundBuffer buffer,buffer2;
+sf::Sound sound,sound2;
+
 
 int board[8][8] =
 { -1,-2,-3,-4,-5,-3,-2,-1,
@@ -30,7 +38,7 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 {
 	if (obj.type == 'P')
 	{
-		bool eatD = 0;
+		
 		if (obj.team == 'W')
 		{
 			if (obj.firstMove)
@@ -41,7 +49,6 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 					{
 						if ((p[i].cord.y == obj.cord.y - 56 && p[i].cord.x == obj.cord.x && newPos.x == obj.cord.x) || (p[i].cord.y == obj.cord.y - 112 && p[i].cord.x == obj.cord.x && newPos.y == obj.cord.y - 112 && newPos.x == obj.cord.x))
 						{
-							std::cout << p[i].cord.x << " " << p[i].cord.y << "    " << newPos.x << " " << newPos.y << std::endl;
 							return 0;
 						}
 					}
@@ -70,7 +77,6 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 					{
 						if (p[i].cord.y == obj.cord.y - 56 && p[i].cord.x == obj.cord.x && newPos.x == obj.cord.x)
 						{
-							std::cout << p[i].cord.x << " " << p[i].cord.y << "    " << newPos.x << " " << newPos.y << std::endl;
 							return 0;
 						}
 					}
@@ -79,7 +85,6 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 				}
 				else if (newPos.x != obj.cord.x && newPos.y == obj.cord.y - 56)
 				{
-					std::cout << 1;
 					for (int i = 0; i < 32; i++)
 					{
 						if (p[i].cord == newPos)
@@ -183,7 +188,6 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 				Vector2f cur = obj.cord;
 				while (cur != newPos)
 				{
-					std::cout << cur.x << " " << cur.y << std::endl;
 					cur.x += (x*size);
 					cur.y += (y*size);
 					if (p[i].cord == cur && p[i].cord != newPos )
@@ -217,7 +221,6 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 				Vector2f cur = obj.cord;
 				while (cur != newPos)
 				{
-					std::cout << cur.x << " " << cur.y << std::endl;
 					if(newPos.x != obj.cord.x)
 					cur.x += (x*size);
 					else
@@ -285,7 +288,7 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 
 void load()
 {
-	
+	turn = 'W';
 	int k = 0;
 	for (int i = 0; i < 8; i++)
 		for (int j = 0; j < 8; j++)
@@ -328,9 +331,18 @@ void move(std::string str)
 	Vector2f oldPos = toCoord(str[0], str[1]);
 	Vector2f newPos = toCoord(str[2], str[3]);
 
+	sound.play();
+
+	if (turn == 'W')
+		turn = 'B';
+	else
+		turn = 'W';
+			rectangle2.setPosition(newPos + offset);
+			rectangle.setPosition(oldPos + offset);
 	for (int i = 0; i < 32; i++)
 		if (f[i].getPosition() == newPos)
 		{
+			sound2.play();
 			f[i].setPosition(-100, -100);
 			p[i].cord.x = -100;
 			p[i].cord.y = -100;
@@ -338,7 +350,7 @@ void move(std::string str)
 		}
 	for (int i = 0; i < 32; i++)
 		if (f[i].getPosition() == oldPos)
-		{
+		{	
 			p[i].cord = newPos;
 			f[i].setPosition(newPos);
 		}
@@ -356,20 +368,87 @@ std::string chessNote(Vector2f p)
 
 	return s;
 }
+bool isKingThreatend(Piece obj)
+{
+	return 0;
+}
 
+void Undo()
+{
+	undo = 1;
+	if (!moves.empty())
+	{
+		moves.pop_back();
+		load();
+		for (int i = 0; i < moves.size(); i++)
+		{
+			move(moves[i]);
+		}
+	}
+	if (moves.empty())
+	{
+		rectangle.setPosition(-100, -100);
+		rectangle2.setPosition(-100, -100);
+	}
+}
+void Redo()
+{
+	if (movesFull.size() == moves.size())
+		return;
+	if (movesFull.size())
+	{
+		load();
+		if (!moves.empty())
+		{
+			for (int i = 0; i < moves.size(); i++)
+			{
+				move(moves[i]);
+			}
+		}
+		if (movesFull.size() > moves.size())
+		{
+			{
+				move(movesFull[moves.size()]);
+				moves.push_back(movesFull[moves.size()]);
+			}
+		}
+	}
+}
 int main()
 {
-	RenderWindow window(VideoMode(504, 504), "The Chess! (press SPACE)");
-
+	RenderWindow window(VideoMode(604, 504), "The Chess! (press SPACE)");
+	buffer.loadFromFile("Audio/chessMove.wav");
+	buffer2.loadFromFile("Audio/Eat.wav");
+	sound.setBuffer(buffer);
+	sound2.setBuffer(buffer2);
+	std::vector<Texture> texture(32);
+	std::vector<Sprite> sprites(32);
+	
+	for(auto i : texture)
+	{
+		i.loadFromFile("images/dot.png");
+	}
+	for (int i = 0; i < 32; i++)
+	{
+		sprites[i].setTexture(texture[i]);
+	}
+	
 	
 	Texture t1, t2,t3;
 	t1.loadFromFile("images/figures.png");
 	t2.loadFromFile("images/board.png");
-
+	t3.loadFromFile("images/dot.png");
 	for (int i = 0; i < 32; i++) f[i].setTexture(t1);
-	Sprite sBoard(t2);
+	Sprite sBoard(t2),greenDot(t3);
+	sBoard.move(50, 0);
+	greenDot.setPosition(offset);
+	rectangle.setPosition(-100, -100);
+	rectangle2.setPosition(-100, -100);
+	rectangle.setFillColor(sf::Color(184,198,96,150));
+	rectangle2.setFillColor(sf::Color(184, 198, 96, 150));
 
 	load();
+	
 
 	bool isMove = false;
 	float dx = 0, dy = 0;
@@ -380,7 +459,6 @@ int main()
 	while (window.isOpen())
 	{
 		Vector2i pos = Mouse::getPosition(window) - Vector2i(offset);
-
 		Event e;
 		while (window.pollEvent(e))
 		{
@@ -389,23 +467,18 @@ int main()
 
 			////move back//////
 			if (e.type == Event::KeyPressed)
-				if (e.key.code == Keyboard::BackSpace)
-				{
-					if (!moves.empty())
-					{
-						moves.pop_back();
-						load();
-						for (int i = 0; i < moves.size(); i++)
-						{
-							move(moves[i]);
-						}
-					}
-				}
+				if (e.key.code == Keyboard::Left)
+					Undo();
+				
+			if (e.type == Event::KeyPressed)
+				if (e.key.code == Keyboard::Right)
+					Redo();
+				
 			/////drag and drop///////
 			if (e.type == Event::MouseButtonPressed)
 				if (e.key.code == Mouse::Left)
 					for (int i = 0; i < 32; i++)
-						if (f[i].getGlobalBounds().contains(pos.x, pos.y))
+						if (f[i].getGlobalBounds().contains(pos.x, pos.y) && p[i].team == turn)
 						{
 							isMove = true; n = i;
 							
@@ -417,34 +490,43 @@ int main()
 			if (e.type == Event::MouseButtonReleased)
 				if (e.key.code == Mouse::Left)
 				{
-					isMove = false;
-					bool availbe = true;
-					Vector2f po = f[n].getPosition() + Vector2f(size / 2, size / 2);
-					newPos = Vector2f(size*int(po.x / size), size*int(po.y / size));
-					for (int i = 0; i < 32; i++)
+					if (isMove)
 					{
-						if (p[i].cord == newPos)
+						isMove = false;
+						bool availbe = true;
+						Vector2f po = f[n].getPosition() + Vector2f(size / 2, size / 2);
+						newPos = Vector2f(size*int(po.x / size), size*int(po.y / size));
+						for (int i = 0; i < 32; i++)
 						{
-							if (p[i].team == p[n].team)
+							if (p[i].cord == newPos)
 							{
-								availbe = 0;
-								newPos = oldPos;
-								break;
+								if (p[i].team == p[n].team)
+								{
+									availbe = 0;
+									newPos = oldPos;
+									break;
+								}
 							}
-						}	
-					}
-					//std::cout << checkForMoves(p[n], newPos) << std::endl;
-					if(availbe)
-					   if (oldPos != newPos && checkForMoves(p[n],newPos))
-						{
+						}
+						if (availbe)
+							if (oldPos != newPos && checkForMoves(p[n], newPos))
+							{
+								if (undo && moves.empty())
+								{
+									movesFull.clear();
+									undo = 0;
+								}
 								str = chessNote(oldPos) + chessNote(newPos);
 								moves.push_back(str);
+								movesFull.push_back(str);
+								std::cout << str << std::endl;
 								move(str);
-					   }
-					   else
-						   newPos = oldPos;
-					f[n].setPosition(newPos);
-					p[n].cord = newPos;
+							}
+							else
+								newPos = oldPos;
+						f[n].setPosition(newPos);
+						p[n].cord = newPos;
+					}
 				}
 		}
 
@@ -457,9 +539,16 @@ int main()
 		////// draw  ///////
 		window.clear();
 		window.draw(sBoard);
+		window.draw(rectangle);
+		window.draw(rectangle2);
+		window.draw(greenDot);
 		for (int i = 0; i < 32; i++) f[i].move(offset);
 		for (int i = 0; i < 32; i++) window.draw(f[i]); window.draw(f[n]);
 		for (int i = 0; i < 32; i++) f[i].move(-offset);
+		for (int i = 0; i < 32; i++)
+		{
+			window.draw(sprites[i]);
+		}
 		window.display();
 	}
 	
