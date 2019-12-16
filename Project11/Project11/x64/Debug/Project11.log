@@ -1,1 +1,31 @@
-﻿  Project11.vcxproj -> C:\Users\EGYPT_LAPTOP\source\repos\Project11\x64\Debug\Project11.exe
+﻿  Source.cpp
+c:\users\egypt_laptop\source\repos\project11\project11\connector.hpp(42): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+c:\users\egypt_laptop\source\repos\project11\project11\connector.hpp(55): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(450): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(464): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(622): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(645): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(646): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(92): warning C4715: 'isKingOk': not all control paths return a value
+c:\users\egypt_laptop\source\repos\project11\project11\source.cpp(427): warning C4715: 'checkForMoves': not all control paths return a value
+  Project11.vcxproj -> C:\Users\EGYPT_LAPTOP\source\repos\Project11\x64\Debug\Project11.exe

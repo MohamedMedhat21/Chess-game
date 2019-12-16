@@ -9,10 +9,10 @@ class Piece
 public:
 	char type;
 	char team;
-	Vector2f cord;
 	int num;
 	bool firstMove;
 	std::vector<std::string>posMov;
+	Sprite pic;
 	int state;
 	Piece();
 	
