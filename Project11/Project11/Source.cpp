@@ -4,21 +4,25 @@
 #include<iostream>
 #include <vector>
 #include "Piece.h"
+#include "Connector.hpp"
 
 using namespace sf;
 
-Vector2f offset(78, 28);
+Vector2f offset(28, 28);
 Piece p[32];
 int size = 56;
 bool undo = 0;
 int n = 0;
 char turn = 'W';
+std::string position = "";
 Sprite f[32];
 std::vector<std::string>moves;
 std::vector<std::string>movesFull;
 sf::RectangleShape rectangle(sf::Vector2f(56, 56)), rectangle2(sf::Vector2f(56, 56));
-sf::SoundBuffer buffer,buffer2;
+sf::SoundBuffer movee,eat;
 sf::Sound sound,sound2;
+std::vector<Texture> texture(32);
+std::vector<Sprite> sprites(32);
 
 
 int board[8][8] =
@@ -33,6 +37,262 @@ int board[8][8] =
 
 int dx[8] = { 2 , 2 , 1 , -1, -2, -2 , 1, -1};
 int dy[8] = {-1 , 1 , 2 ,  2,  1, -1, -2, -2};
+
+bool isKingOk(Piece obj, Vector2f newPos)
+{
+	int DX[] = { 1,-1,1,-1,1,-1,0,0 };
+	int DY[] = { 1,1,-1,-1,0, 0,1,-1 };
+
+	for (int i = 0; i < 8; i++)
+	{
+		Vector2f cur = newPos;
+		bool flag = 0;
+		while (cur.x + (size*DX[i]) + 28 < 476 && cur.y + (DY[i] * size) + 28 < 476 && cur.y + (DY[i] * size) + 28 > 14 && cur.x + (size*DX[i]) + 28 > 14)
+		{
+			std::cout << cur.x << " " << cur.y << std::endl << std::endl;;
+			cur.x += (DX[i] * size);
+			cur.y += (DY[i] * size);
+
+			for (int j = 0; j < 32; j++)if(p[j].num !=obj.num)
+			{
+				if (f[j].getPosition() == cur)
+				{
+					if (obj.team != p[j].team)
+					{
+						std::cout << f[j].getPosition().x << " " << f[j].getPosition().y << " " << cur.x << " " << cur.y << std::endl;
+						if (p[j].type == 'Q')
+							return 0;
+						else if (i < 4 && (p[j].type == 'B'))
+							return 0;
+						else if (i > 3 && (p[j].type == 'R'))
+							return 0;
+					}
+					flag = 1;
+					break;
+				}
+			}
+			if (flag)
+				break;
+		}
+	}
+	for (int i = 0; i < 8; i++)
+	{
+		
+		if (newPos.x + (size*dx[i]) + 28 < 476 && newPos.y + (dy[i] * size) + 28 < 476 && newPos.y + (dy[i] * size) + 28 > 14 && newPos.x + (size*dx[i]) + 28 > 14)
+		{
+			
+			for (int j = 0; j < 32; j++)if (p[j].num != obj.num)
+				if (f[j].getPosition().x == newPos.x + (size*dx[i]) && f[j].getPosition().y == newPos.y + (size*dy[i]) && p[j].team != obj.team)
+				{
+					if (p[j].type == 'K')
+						return 0;
+				}
+		}
+		
+	}
+}
+void possibleMoves(Piece obj)
+{
+	if (obj.type == 'K')
+	{
+		int k = 0;
+		int T = 24;
+		for (int i = 0; i < 8; i++)
+		{
+			if (obj.cord.x + (size*dx[i]) + 28 < 476 && obj.cord.y + (dy[i] * size) + 28 < 476 && obj.cord.y + (dy[i] * size) + 28 > 14 && obj.cord.x + (size*dx[i]) + 28 > 14)
+			{
+			sprites[k].setPosition(obj.cord.x+(size*dx[i])+28,obj.cord.y+(dy[i]*size)+28);
+			for(int j =0; j<32; j++)
+				if (p[j].cord.x == obj.cord.x + (size*dx[i]) && p[j].cord.y == obj.cord.y + (size*dy[i]) && p[j].team != obj.team)
+				{
+					sprites[T].setPosition(obj.cord.x + (size*dx[i]) + 28, obj.cord.y + (dy[i] * size) + 28);
+					T++;
+				}
+			}
+			k++;
+		}
+	}
+	if (obj.type == 'B')
+	{
+		int DX[4] = { 1,-1,1,-1 };
+		int DY[4] = { -1, 1,1,-1 };
+		int k = 0;
+		int t = 24;
+		for (int i = 0; i < 4; i++)
+		{
+					Vector2f cur = obj.cord;
+					while (cur.x + (size*DX[i]) + 28 < 476 && cur.y + (DY[i] * size) + 28 < 476 && cur.y + (DY[i] * size) + 28 > 14 && cur.x + (size*DX[i]) + 28 > 14)
+					{
+						bool flag = 0;
+						cur.x += (DX[i] * size);
+						cur.y += (DY[i] * size);
+						sprites[k].setPosition(cur+offset);
+						k++;
+						for(int j=0; j<32; j++)
+						if (p[j].cord == cur)
+						{
+							if (p[j].team != obj.team)
+							{
+							sprites[t].setPosition(cur + offset);
+							t++;
+							}
+							flag = 1;
+							break;
+						}
+						if (flag)
+							break;
+					}
+		}
+	}
+	if (obj.type == 'R')
+	{
+		int DX[] = { 1,0,-1,0 };
+		int DY[] = { 0,1,0,-1 };
+		int k = 0;
+		int t = 24;
+			for (int i = 0; i < 4; i++)
+			{
+				Vector2f cur = obj.cord;
+				while (cur.x + (size*DX[i]) + 28 < 476 && cur.y + (DY[i] * size) + 28 < 476 && cur.y + (DY[i] * size) + 28 > 14 && cur.x + (size*DX[i]) + 28 > 14)
+				{
+					bool flag = 0;
+						cur.x += (DX[i]*size);
+						cur.y += (DY[i]*size);
+						sprites[k].setPosition(cur + offset);
+						k++;
+					for(int j=0; j<32; j++)
+					if (p[j].cord == cur)
+					{
+						if (p[j].team != obj.team)
+						{
+						sprites[t].setPosition(cur + offset);
+						t++;
+						}
+						flag = 1;
+						break;
+					}
+					if (flag)
+						break;
+				}
+
+			}
+		
+	}
+	if (obj.type == 'Q')
+	{
+		int DX[] = {1,1,1,-1,-1,-1,0,0};
+		int DY[] = {1,0,-1,-1,1, 0,1,-1};
+		int k = 0;
+		int t = 24;
+		for (int i = 0; i < 8; i++)
+		{
+			Vector2f cur = obj.cord;
+			bool flag = 0;
+			while (cur.x + (size*DX[i]) + 28 < 476 && cur.y + (DY[i] * size) + 28 < 476 && cur.y + (DY[i] * size) + 28 > 14 && cur.x + (size*DX[i]) + 28 > 14)
+			{
+					cur.x += (DX[i]*size);
+					cur.y += (DY[i]*size);
+					sprites[k].setPosition(cur + offset);
+						k++;
+				for(int j=0; j<32; j++)
+				if (p[j].cord == cur)
+				{
+					if (obj.team != p[j].team)
+					{
+						sprites[t].setPosition(cur + offset);
+						t++;
+					}
+					flag = 1;
+					break;
+				}
+				if (flag)
+					break;
+			}
+
+		}
+	}
+	if (obj.type == '#')
+	{
+		int DX[] = { 1,1,1,-1,-1,-1,0,0 };
+		int DY[] = { 1,0,-1,-1,1, 0,1,-1 };
+		int k = 0;
+		int t = 24;
+		for (int i = 0; i < 8; i++)
+		{
+			Vector2f cur = obj.cord;
+			bool flag = 0;
+			if (cur.x + (size*DX[i]) + 28 < 476 && cur.y + (DY[i] * size) + 28 < 476 && cur.y + (DY[i] * size) + 28 > 14 && cur.x + (size*DX[i]) + 28 > 14)
+			{
+				cur.x += (DX[i] * size);
+				cur.y += (DY[i] * size);
+				if (isKingOk(obj, cur))
+				{
+				sprites[k].setPosition(cur + offset);
+				k++;
+				}
+				for (int j = 0; j < 32; j++)
+					if (p[j].cord == cur)
+					{
+						if (obj.team != p[j].team)
+						{
+							sprites[t].setPosition(cur + offset);
+							t++;
+						}
+						flag = 1;
+						break;
+					}
+			}
+		}
+	}
+	if (obj.type == 'P')
+	{
+		int DX[] = { 0 ,-1 , 1};
+		int DY[] = { 1 ,1 ,  1};
+		int team;
+		if (obj.team == 'W')
+			team = -1;
+		else
+			team = 1;
+		int k = 0;
+		int t = 24;
+		int num=0;
+		
+			Vector2f cur = obj.cord;
+			while (cur.x + (size*DX[0]*team) + 28 < 476 && cur.y + (DY[0] * size*team) + 28 < 476 && cur.y + (DY[0] * size*team) + 28 > 14 && cur.x + (size*DX[0]*team) + 28 > 14)
+			{
+				num++;
+				bool flag = 0;
+				if(num < 2)
+				for(int i=1; i<3; i++)
+				for (int j = 0; j < 32; j++)
+					if (p[j].cord.x == cur.x + DX[i] * size *team && p[j].cord.y == cur.y + DY[i] * size * team && p[j].team != obj.team)
+					{
+						sprites[t].setPosition(cur.x + DX[i] * size *team + 28 , cur.y + DY[i] * size * team + 28);
+						t++;
+					}
+				cur.x += (DX[0] * size *team);
+				cur.y += (DY[0] * size *team);
+				sprites[k].setPosition(cur + offset);
+				k++;
+				for (int j = 0; j < 32; j++)
+					if (p[j].cord == cur)
+					{
+						flag = 1;
+						break;
+					}
+				if (flag)
+					break;
+				if (obj.firstMove)
+				{
+					if (num == 2)
+						break;
+				}
+				else break;
+			}
+		
+	}
+}
+	
 
 bool checkForMoves(Piece &obj,Vector2f newPos)
 {
@@ -108,7 +368,6 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 					{
 						if ((p[i].cord.y == obj.cord.y + 56 && p[i].cord.x == obj.cord.x && newPos.x == obj.cord.x) || (p[i].cord.y == obj.cord.y + 112 && p[i].cord.x == obj.cord.x && newPos.y == obj.cord.y + 112 && newPos.x == obj.cord.x))
 						{
-							std::cout << p[i].cord.x << " " << p[i].cord.y << "    " << newPos.x << " " << newPos.y << std::endl;
 							return 0;
 						}
 					}
@@ -137,7 +396,6 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 					{
 						if (p[i].cord.y == obj.cord.y + 56 && p[i].cord.x == obj.cord.x && newPos.x == obj.cord.x)
 						{
-							std::cout << p[i].cord.x << " " << p[i].cord.y << "    " << newPos.x << " " << newPos.y << std::endl;
 							return 0;
 						}
 					}
@@ -280,12 +538,11 @@ bool checkForMoves(Piece &obj,Vector2f newPos)
 	}
 	if (obj.type == '#')
 	{
-		if ((abs(newPos.x - obj.cord.x) == 56 || abs(newPos.x - obj.cord.x) == 0) && (abs(newPos.y - obj.cord.y) == 56 || abs(newPos.y - obj.cord.y) == 0))
+		if (((abs(newPos.x - obj.cord.x) == 56 || abs(newPos.x - obj.cord.x) == 0) && (abs(newPos.y - obj.cord.y) == 56 || abs(newPos.y - obj.cord.y) == 0)) && isKingOk(obj,newPos))
 			return 1;
 		return 0;
 	}
 }
-
 void load()
 {
 	turn = 'W';
@@ -317,7 +574,7 @@ void load()
 			k++;
 		}
 }
-	
+
 
 Vector2f toCoord(char a, char b)
 {
@@ -326,13 +583,21 @@ Vector2f toCoord(char a, char b)
 
 	return Vector2f(x*size, y*size);
 }
+std::string chessNote(Vector2f p)
+{
+	std::string s = "";
+	s += char(p.x / size + 97);
+	s += char(7 - p.y / size + 49);
+
+	return s;
+}
 void move(std::string str)
 {
 	Vector2f oldPos = toCoord(str[0], str[1]);
 	Vector2f newPos = toCoord(str[2], str[3]);
 
 	sound.play();
-
+	p[n].cord = newPos;
 	if (turn == 'W')
 		turn = 'B';
 	else
@@ -351,45 +616,14 @@ void move(std::string str)
 	for (int i = 0; i < 32; i++)
 		if (f[i].getPosition() == oldPos)
 		{	
-			p[i].cord = newPos;
 			f[i].setPosition(newPos);
+			p[i].cord = newPos;
 		}
 	//castling       //if the king didn't move
 	if (str == "e1g1")  move("h1f1");
 	if (str == "e8g8")  move("h8f8");
 	if (str == "e1c1")  move("a1d1");
 	if (str == "e8c8")  move("a8d8");
-}
-std::string chessNote(Vector2f p)
-{
-	std::string s = "";
-	s += char(p.x / size + 97);
-	s += char(7 - p.y / size + 49);
-
-	return s;
-}
-bool isKingThreatend(Piece obj)
-{
-	return 0;
-}
-
-void Undo()
-{
-	undo = 1;
-	if (!moves.empty())
-	{
-		moves.pop_back();
-		load();
-		for (int i = 0; i < moves.size(); i++)
-		{
-			move(moves[i]);
-		}
-	}
-	if (moves.empty())
-	{
-		rectangle.setPosition(-100, -100);
-		rectangle2.setPosition(-100, -100);
-	}
 }
 void Redo()
 {
@@ -414,40 +648,67 @@ void Redo()
 		}
 	}
 }
+void Undo()
+{
+	undo = 1;
+	if (position.length() >= 6)
+		position.erase(position.length() - 6, 5);
+	else
+		position = "";
+	if (!moves.empty())
+	{
+		moves.pop_back();
+		load();
+		for (int i = 0; i < moves.size(); i++)
+		{
+			move(moves[i]);
+		}
+	}
+	if (moves.empty())
+	{
+		rectangle.setPosition(-100, -100);
+		rectangle2.setPosition(-100, -100);
+	}
+}
+
 int main()
 {
-	RenderWindow window(VideoMode(604, 504), "The Chess! (press SPACE)");
-	buffer.loadFromFile("Audio/chessMove.wav");
-	buffer2.loadFromFile("Audio/Eat.wav");
-	sound.setBuffer(buffer);
-	sound2.setBuffer(buffer2);
-	std::vector<Texture> texture(32);
-	std::vector<Sprite> sprites(32);
-	
-	for(auto i : texture)
+	RenderWindow window(VideoMode(504, 504), "The Chess! (press SPACE)");
+	movee.loadFromFile("Audio/chessMove.wav");
+	eat.loadFromFile("Audio/Eat.wav");
+	sound.setBuffer(movee);
+	sound2.setBuffer(eat);
+
+	ConnectToEngine((char *)"C:/Users/EGYPT_LAPTOP/source/repos/Project11/Project11/stockfish_10_x64.exe");
+	for(int i=0; i<32; i++)
 	{
-		i.loadFromFile("images/dot.png");
+		if (i < 24)
+			texture[i].loadFromFile("images/dot.png");
+		else
+			texture[i].loadFromFile("images/TargetPiece.png");
 	}
-	for (int i = 0; i < 32; i++)
-	{
-		sprites[i].setTexture(texture[i]);
-	}
+
 	
-	
-	Texture t1, t2,t3;
+	Texture t1, t2;
 	t1.loadFromFile("images/figures.png");
 	t2.loadFromFile("images/board.png");
-	t3.loadFromFile("images/dot.png");
 	for (int i = 0; i < 32; i++) f[i].setTexture(t1);
-	Sprite sBoard(t2),greenDot(t3);
-	sBoard.move(50, 0);
-	greenDot.setPosition(offset);
+	Sprite sBoard(t2);
+
 	rectangle.setPosition(-100, -100);
 	rectangle2.setPosition(-100, -100);
 	rectangle.setFillColor(sf::Color(184,198,96,150));
 	rectangle2.setFillColor(sf::Color(184, 198, 96, 150));
 
 	load();
+	for (int i = 0; i < 32; i++)
+	{
+		sprites[i].setTexture(texture[i]);
+		//if(i<24)
+		sprites[i].setColor(sf::Color(0, 128, 0, 200));
+		sprites[i].setPosition(-120, -120);
+	}
+	
 	
 
 	bool isMove = false;
@@ -458,6 +719,7 @@ int main()
 
 	while (window.isOpen())
 	{
+	
 		Vector2i pos = Mouse::getPosition(window) - Vector2i(offset);
 		Event e;
 		while (window.pollEvent(e))
@@ -473,6 +735,7 @@ int main()
 			if (e.type == Event::KeyPressed)
 				if (e.key.code == Keyboard::Right)
 					Redo();
+
 				
 			/////drag and drop///////
 			if (e.type == Event::MouseButtonPressed)
@@ -481,6 +744,7 @@ int main()
 						if (f[i].getGlobalBounds().contains(pos.x, pos.y) && p[i].team == turn)
 						{
 							isMove = true; n = i;
+							possibleMoves(p[n]);
 							
 							dx = pos.x - f[i].getPosition().x;
 							dy = pos.y - f[i].getPosition().y;
@@ -490,6 +754,11 @@ int main()
 			if (e.type == Event::MouseButtonReleased)
 				if (e.key.code == Mouse::Left)
 				{
+					for (int i = 0; i < 32; i++)
+					{
+						sprites[i].setTexture(texture[i]);
+						sprites[i].setPosition(-100, -100);
+					}
 					if (isMove)
 					{
 						isMove = false;
@@ -497,17 +766,18 @@ int main()
 						Vector2f po = f[n].getPosition() + Vector2f(size / 2, size / 2);
 						newPos = Vector2f(size*int(po.x / size), size*int(po.y / size));
 						for (int i = 0; i < 32; i++)
-						{
-							if (p[i].cord == newPos)
+							if(i!=n)
 							{
-								if (p[i].team == p[n].team)
+								if (f[i].getPosition() == newPos)
 								{
-									availbe = 0;
-									newPos = oldPos;
-									break;
+									if (p[i].team == p[n].team)
+									{
+										availbe = 0;
+										newPos = oldPos;
+										break;
+									}
 								}
 							}
-						}
 						if (availbe)
 							if (oldPos != newPos && checkForMoves(p[n], newPos))
 							{
@@ -517,6 +787,7 @@ int main()
 									undo = 0;
 								}
 								str = chessNote(oldPos) + chessNote(newPos);
+								position += str + " ";
 								moves.push_back(str);
 								movesFull.push_back(str);
 								std::cout << str << std::endl;
@@ -526,7 +797,44 @@ int main()
 								newPos = oldPos;
 						f[n].setPosition(newPos);
 						p[n].cord = newPos;
+						for (int i = 0; i < 32; i++)
+						{
+							std::cout << p[i].cord.x << " " << p[i].cord.y << "   " << f[i].getPosition().x << " " << f[i].getPosition().y << std::endl;
+							if (i == 15)
+								std::cout << std::endl;
+						}
 					}
+				}
+
+			//computer move
+			if (e.type == Event::KeyPressed)
+				if (e.key.code == Keyboard::Space)
+				{
+					str = getNextMove(position);
+
+					oldPos = toCoord(str[0], str[1]);
+					newPos = toCoord(str[2], str[3]);
+				
+					for (int i = 0; i < 32; i++)if (f[i].getPosition() == oldPos)n = i;
+
+					//animation//
+					for (int i = 0; i < 300; i++)
+					{
+						Vector2f po = newPos - oldPos;
+						f[n].move(po.x / 300, po.y / 300);
+						window.draw(sBoard);
+						for (int i = 0; i < 32; i++) f[i].move(offset);
+						for (int i = 0; i < 32; i++) window.draw(f[i]); window.draw(f[n]);
+						for (int i = 0; i < 32; i++) f[i].move(-offset);
+						window.display();
+					}
+					moves.push_back(str);
+					movesFull.push_back(str);
+					std::cout << str << std::endl;
+					move(str);
+					position += str + " ";
+					f[n].setPosition(newPos);
+					p[n].cord = newPos;
 				}
 		}
 
@@ -541,16 +849,13 @@ int main()
 		window.draw(sBoard);
 		window.draw(rectangle);
 		window.draw(rectangle2);
-		window.draw(greenDot);
 		for (int i = 0; i < 32; i++) f[i].move(offset);
+		for (int i = 0; i < 32; i++)window.draw(sprites[i]);
 		for (int i = 0; i < 32; i++) window.draw(f[i]); window.draw(f[n]);
 		for (int i = 0; i < 32; i++) f[i].move(-offset);
-		for (int i = 0; i < 32; i++)
-		{
-			window.draw(sprites[i]);
-		}
 		window.display();
 	}
+	CloseConnection();
 	
 	return 0;
 }
